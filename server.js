@@ -2,22 +2,24 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const mongoose = require('mongoose')
-const alertRoutes = require('./routes/alerts');
+const alertRoutes = require('./routes/alerts'); // make sure this doesn't use MongoDB
 const { handleAlert } = require('./controllers/alertController');
-
 
 const app = express();
 const server = http.createServer(app);
 
+// Get port from Railway-provided env variable
+const PORT = process.env.PORT || 5000;
+
+// Setup Socket.IO with CORS
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:5173', // frontend
+        origin: 'https://snatching-frontend.vercel.app', // ✅ no trailing slash
         methods: ['GET', 'POST']
     }
 });
 
-// Store io in app locals so controllers can access
+// Make io accessible in requests
 app.use((req, res, next) => {
     req.io = io;
     next();
@@ -26,16 +28,15 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection (optional for storing alerts)
-mongoose.connect('mongodb://localhost:27017/snatchingDB');
-
+// Routes (must be self-contained, no DB calls)
 app.use('/api/alerts', alertRoutes);
 
+// Test route
 app.get("/", (req, res) => {
-    res.send("Hello")
-})
+    res.send("Hello from Railway backend!");
+});
 
-
-server.listen(5000, () => {
-    console.log('Server running on http://localhost:5000');
+// Start server
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
